@@ -3,11 +3,6 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven-3.9'
-        jdk 'JDK-21'
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -17,7 +12,12 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh 'mvn clean package -B -q'
+                withEnv([
+                    'JAVA_HOME=/opt/java/openjdk',
+                    'PATH=/usr/share/maven/bin:$JAVA_HOME/bin:$PATH'
+                ]) {
+                    sh 'mvn clean package -B -q'
+                }
             }
         }
     }
