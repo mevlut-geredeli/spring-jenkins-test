@@ -1,16 +1,13 @@
 pipeline {
-
     agent any
 
     environment {
-
         JAVA_HOME = "/usr/lib/jvm/java-21-openjdk-amd64"
         MAVEN_HOME = "/usr/share/maven"
         PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${env.PATH}"
 
         DEPLOY_HOST = "31.56.60.92"
         APP_PATH = "/opt/apps/demo"
-
     }
 
     options {
@@ -22,6 +19,20 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Debug Branch') {
+            steps {
+                script {
+                    // branch adı doğru okunuyor, detached HEAD sorununu önler
+                    def branch = sh(
+                        script: "git rev-parse --abbrev-ref HEAD || git name-rev --name-only HEAD",
+                        returnStdout: true
+                    ).trim()
+                    env.BRANCH_NAME = branch.replaceAll('^remotes/origin/', '')
+                    echo "Current branch: ${env.BRANCH_NAME}"
+                }
             }
         }
 
@@ -44,88 +55,56 @@ pipeline {
                         script: "date +%Y%m%d%H%M%S",
                         returnStdout: true
                     ).trim()
+                    echo "Build version: ${VERSION}"
                 }
             }
         }
 
         stage('Deploy TEST') {
-
             when {
-                branch 'test'
+                expression { env.BRANCH_NAME == 'test' }
             }
-
             steps {
-
                 echo "Deploying version ${VERSION} to TEST"
-
                 sshagent(['deploy-key']) {
-
+                    sh "ssh root@${DEPLOY_HOST} 'mkdir -p ${APP_PATH}/releases'"
+                    sh "scp target/*.jar root@${DEPLOY_HOST}:${APP_PATH}/releases/app-${VERSION}.jar"
                     sh """
-                    scp target/*.jar root@${DEPLOY_HOST}:${APP_PATH}/releases/app-${VERSION}.jar
-                    """
-
-                    sh """
-                    ssh root@${DEPLOY_HOST} '
-
+                        ssh root@${DEPLOY_HOST} '
                         ln -sfn ${APP_PATH}/releases/app-${VERSION}.jar ${APP_PATH}/current
                         systemctl restart demo
-
-                    '
+                        '
                     """
-
                 }
-
             }
-
         }
 
         stage('Deploy PROD') {
-
             when {
-                branch 'prod'
+                expression { env.BRANCH_NAME == 'prod' }
             }
-
             steps {
-
                 echo "Deploying version ${VERSION} to PROD"
-
                 sshagent(['deploy-key']) {
-
+                    sh "ssh root@${DEPLOY_HOST} 'mkdir -p ${APP_PATH}/releases'"
+                    sh "scp target/*.jar root@${DEPLOY_HOST}:${APP_PATH}/releases/app-${VERSION}.jar"
                     sh """
-                    scp target/*.jar root@${DEPLOY_HOST}:${APP_PATH}/releases/app-${VERSION}.jar
-                    """
-
-                    sh """
-                    ssh root@${DEPLOY_HOST} '
-
+                        ssh root@${DEPLOY_HOST} '
                         ln -sfn ${APP_PATH}/releases/app-${VERSION}.jar ${APP_PATH}/current
                         systemctl restart demo
-
-                    '
+                        '
                     """
-
                 }
-
             }
-
         }
-
     }
 
     post {
-
         success {
-
-            echo "Pipeline başarılı"
-
+            echo "Pipeline başarıyla tamamlandı."
         }
-
         failure {
-
-            echo "Pipeline başarısız"
-
+            echo "Pipeline başarısız."
         }
-
     }
-
 }
