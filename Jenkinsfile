@@ -22,22 +22,6 @@ pipeline {
             }
         }
 
-        stage('Detect Branch') {
-            steps {
-                script {
-                    // Branch adı doğru okunuyor; detached HEAD sorununu önler
-                    def branch = sh(
-                        script: "git rev-parse --abbrev-ref HEAD || git name-rev --name-only HEAD",
-                        returnStdout: true
-                    ).trim()
-
-                    // 'remotes/origin/test' gibi isimleri temizle
-                    env.BRANCH_NAME = branch.replaceAll('^remotes/origin/', '')
-                    echo "Current branch: ${env.BRANCH_NAME}"
-                }
-            }
-        }
-
         stage('Build & Unit Test') {
             steps {
                 sh 'mvn clean verify -B'
