@@ -22,14 +22,16 @@ pipeline {
             }
         }
 
-        stage('Debug Branch') {
+        stage('Detect Branch') {
             steps {
                 script {
-                    // branch adı doğru okunuyor, detached HEAD sorununu önler
+                    // Branch adı doğru okunuyor; detached HEAD sorununu önler
                     def branch = sh(
                         script: "git rev-parse --abbrev-ref HEAD || git name-rev --name-only HEAD",
                         returnStdout: true
                     ).trim()
+
+                    // 'remotes/origin/test' gibi isimleri temizle
                     env.BRANCH_NAME = branch.replaceAll('^remotes/origin/', '')
                     echo "Current branch: ${env.BRANCH_NAME}"
                 }
