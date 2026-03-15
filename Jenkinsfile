@@ -3,10 +3,12 @@ pipeline {
 
     environment {
         JAVA_HOME = "/usr/lib/jvm/java-21-openjdk-amd64"
-        PATH = "${JAVA_HOME}/bin:/usr/share/maven/bin:${env.PATH}"
+        MAVEN_HOME = "/usr/share/maven"
+        PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${env.PATH}"
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -15,40 +17,49 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package -B -q'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'mvn test -B -q'
+                sh 'mvn clean verify -B'
             }
         }
 
         stage('Static Code Analysis') {
             steps {
-                echo "SonarQube analizi için hazır"
-                // sh 'mvn sonar:sonar -Dsonar.projectKey=... -Dsonar.host.url=...'
+                echo "SonarQube analysis hazırlanıyor"
+                // sh 'mvn sonar:sonar'
             }
         }
 
-        stage('Artifact Upload') {
+        stage('Package') {
             steps {
-                echo "Nexus deploy için hazır"
-                // sh 'mvn deploy -DaltDeploymentRepository=...'
+                sh 'mvn package -DskipTests'
+            }
+        }
+
+        stage('Upload Artifact (Nexus)') {
+            steps {
+                echo "Artifact Nexus'a gönderilecek"
+                // sh 'mvn deploy'
             }
         }
 
         stage('Deploy to Server') {
             steps {
-                echo "Uygulama mvlt1 veya hedef server'a deploy edilecek"
-                // scp / ansible vb.
+                echo "Remote server deploy"
+                // sh 'scp target/app.jar user@server:/opt/app/'
+                // sh 'ssh user@server systemctl restart app'
             }
         }
+
     }
 
     post {
-        success { echo 'Pipeline başarıyla tamamlandı.' }
-        failure { echo 'Pipeline başarısız.' }
+
+        success {
+            echo 'Pipeline başarıyla tamamlandı.'
+        }
+
+        failure {
+            echo 'Pipeline başarısız.'
+        }
+
     }
 }
