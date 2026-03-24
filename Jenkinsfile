@@ -8,6 +8,7 @@ pipeline {
 
         DEPLOY_HOST = "31.56.60.92"
         APP_PATH = "/opt/apps/demo"
+        SSH_KEY = "/var/jenkins_home/deploy_keys/deploy_key"
     }
 
     options {
@@ -52,16 +53,20 @@ pipeline {
             }
             steps {
                 echo "Deploying version ${VERSION} to TEST"
-                sshagent(['deploy-key']) {
-                    sh "ssh root@${DEPLOY_HOST} 'mkdir -p ${APP_PATH}/releases'"
-                    sh "scp target/*.jar root@${DEPLOY_HOST}:${APP_PATH}/releases/app-${VERSION}.jar"
-                    sh """
-                        ssh root@${DEPLOY_HOST} '
-                        ln -sfn ${APP_PATH}/releases/app-${VERSION}.jar ${APP_PATH}/current
-                        systemctl restart demo
-                        '
-                    """
-                }
+
+                sh """
+                    ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no root@${DEPLOY_HOST} \\
+                    "mkdir -p ${APP_PATH}/releases"
+
+                    scp -i ${SSH_KEY} -o StrictHostKeyChecking=no \\
+                    target/*.jar root@${DEPLOY_HOST}:${APP_PATH}/releases/app-${VERSION}.jar
+
+                    ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no root@${DEPLOY_HOST} \\
+                    "
+                    ln -sfn ${APP_PATH}/releases/app-${VERSION}.jar ${APP_PATH}/current
+                    systemctl restart demo
+                    "
+                """
             }
         }
 
@@ -71,16 +76,20 @@ pipeline {
             }
             steps {
                 echo "Deploying version ${VERSION} to PROD"
-                sshagent(['deploy-key']) {
-                    sh "ssh root@${DEPLOY_HOST} 'mkdir -p ${APP_PATH}/releases'"
-                    sh "scp target/*.jar root@${DEPLOY_HOST}:${APP_PATH}/releases/app-${VERSION}.jar"
-                    sh """
-                        ssh root@${DEPLOY_HOST} '
-                        ln -sfn ${APP_PATH}/releases/app-${VERSION}.jar ${APP_PATH}/current
-                        systemctl restart demo
-                        '
-                    """
-                }
+
+                sh """
+                    ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no root@${DEPLOY_HOST} \\
+                    "mkdir -p ${APP_PATH}/releases"
+
+                    scp -i ${SSH_KEY} -o StrictHostKeyChecking=no \\
+                    target/*.jar root@${DEPLOY_HOST}:${APP_PATH}/releases/app-${VERSION}.jar
+
+                    ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no root@${DEPLOY_HOST} \\
+                    "
+                    ln -sfn ${APP_PATH}/releases/app-${VERSION}.jar ${APP_PATH}/current
+                    systemctl restart demo
+                    "
+                """
             }
         }
     }
