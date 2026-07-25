@@ -11,7 +11,7 @@ pipeline {
         MAVEN_HOME = "/usr/share/maven"
         PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${env.PATH}"
 
-        DEPLOY_HOST = "31.56.60.92"             // Application server IP
+        DEPLOY_HOST = "45.198.68.163"             // Application server IP
         SSH_KEY     = "/var/jenkins_home/deploy_keys/deploy_key"
     }
 
